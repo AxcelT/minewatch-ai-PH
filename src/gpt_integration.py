@@ -1,23 +1,24 @@
 # Module for interfacing with your GPT API
-import openai
+from openai import OpenAI
 from config import OPENAI_API_KEY
+import base64
 
 # Set your GPT API key.
-openai.api_key = OPENAI_API_KEY
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 def analyze_image(image_path: str, context: str) -> str:
     """
     Sends an image file path and context to the GPT API for analysis.
     Returns the API's response as a string.
     """
-    prompt = (
-        f"Analyze the image found at '{image_path}' with the following context: {context}.\n"
-        "Provide environmental and mining-related observations."
-    )
-    
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",  # Change the model if needed.
+        # Read and encode the image to base64
+        with open(image_path, "rb") as f:
+            image_data = base64.b64encode(f.read()).decode("utf-8")
+        
+        # Prepare the message with text and image
+        response = client.chat.completions.create(
+            model="gpt-4o",  # gpt-4o supports image inputs
             messages=[
                 {
                     "role": "system",
@@ -27,17 +28,24 @@ def analyze_image(image_path: str, context: str) -> str:
                         "erosion, and other environmental indicators."
                     )
                 },
-                {"role": "user", "content": prompt}
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": f"Site context: {context}. Provide environmental and mining-related observations."},
+                        {"type": "image_url", "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_data}"
+                        }},
+                    ]
+                }
             ],
-            max_tokens=150,
+            max_tokens=500,
         )
-        # Extract and return the analysis from the response.
-        analysis = response["choices"][0]["message"]["content"]
-        return analysis
+        
+        return response.choices[0].message.content
     except Exception as e:
         return f"Error during API call: {e}"
 
 # To test this module independently, you can uncomment the section below.
-# if __name__ == "__main__":
-#     test_result = analyze_image("data/frames/frame_0.jpg", "Site type: open pit; Mineral: Gold")
-#     print("Analysis:", test_result)
+if __name__ == "__main__":
+    test_result = analyze_image("data/frames/frame_370.jpg", "Site type: open pit; Mineral: Gold")
+    print("Analysis:", test_result)
