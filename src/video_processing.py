@@ -51,11 +51,3 @@ def extract_frames(video_path: str, output_dir: str = "data/frames", interval: i
 
     print(f"[Info] Extracted {len(saved_frames)} frames to '{output_dir}' using interval {interval}.")
     return saved_frames
-
-# To Test independently
-# if __name__ == "__main__":
-#     try:
-#         frames = extract_frames("data/sample_video.mp4", interval=None)
-#         print(f"[Success] Extracted {len(frames)} frames.")
-#     except Exception as e:
-#         print(f"[Exception] {e}")
