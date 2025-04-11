@@ -28,6 +28,7 @@ def extract_frames(video_path: str, output_dir: str = "data/frames", interval: i
         raise IOError(f"[Error] Unable to open video file: {video_path}")
     
     count = 0
+    saved_index = 0
     saved_frames = []
 
     while True:
@@ -36,10 +37,11 @@ def extract_frames(video_path: str, output_dir: str = "data/frames", interval: i
             break
 
         if count % interval == 0:
-            frame_filename = os.path.join(output_dir, f"frame_{count}.jpg")
+            frame_filename = os.path.join(output_dir, f"frame_{saved_index}.jpg")
             success = cv2.imwrite(frame_filename, frame)
             if success:
                 saved_frames.append(frame_filename)
+                saved_index += 1
             else:
                 print(f"[Warning] Failed to write frame at count {count}")
 
@@ -53,7 +55,7 @@ def extract_frames(video_path: str, output_dir: str = "data/frames", interval: i
 # To Test independently
 # if __name__ == "__main__":
 #     try:
-#         frames = extract_frames("data/sample_video.mp4", interval=None)  # Test with invalid interval
+#         frames = extract_frames("data/sample_video.mp4", interval=None)
 #         print(f"[Success] Extracted {len(frames)} frames.")
 #     except Exception as e:
 #         print(f"[Exception] {e}")
