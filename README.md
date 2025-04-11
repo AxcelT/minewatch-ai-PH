@@ -1,6 +1,3 @@
-### ✅ **README.md**
-
-```markdown
 # MineWatch AI - PH 🇵🇭
 
 **MineWatch AI - PH** is a drone footage analysis system tailored for **Philippine mining conditions**. Built with Python 3.11, OpenCV, and GPT API integration, it extracts video frames and analyzes them using site-specific context. This tool is built for environmental monitoring, site assessments, and compliance checks—factoring in the unique challenges of tropical weather and local mining practices.
