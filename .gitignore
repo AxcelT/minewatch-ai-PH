@@ -33,6 +33,3 @@ tmp/
 
 # Test output and caches
 .pytest_cache/
-
-# API Key config file
-src/config.py
