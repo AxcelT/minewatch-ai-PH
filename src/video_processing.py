@@ -8,15 +8,24 @@ def extract_frames(video_path: str, output_dir: str = "data/frames", interval: i
     Extract frames from the video every 'interval' frames and save them to output_dir.
     Overwrites the output_dir by clearing it before extraction.
     """
-    # Clear the output directory if it exists
+    # Validate interval
+    if not isinstance(interval, int) or interval <= 0:
+        print(f"[Warning] Invalid interval '{interval}' provided. Falling back to default value of 30.")
+        interval = 30
+
+    # Validate video path
+    if not os.path.exists(video_path):
+        raise FileNotFoundError(f"[Error] Video path does not exist: {video_path}")
+
+    # Clear and recreate output directory
     if os.path.exists(output_dir):
         shutil.rmtree(output_dir)
     os.makedirs(output_dir)
 
+    # Open the video file
     cap = cv2.VideoCapture(video_path)
-    
     if not cap.isOpened():
-        raise IOError(f"Unable to open video file: {video_path}")
+        raise IOError(f"[Error] Unable to open video file: {video_path}")
     
     count = 0
     saved_frames = []
@@ -26,18 +35,25 @@ def extract_frames(video_path: str, output_dir: str = "data/frames", interval: i
         if not ret:
             break
 
-        # Save the frame if it meets the interval criteria.
         if count % interval == 0:
             frame_filename = os.path.join(output_dir, f"frame_{count}.jpg")
-            cv2.imwrite(frame_filename, frame)
-            saved_frames.append(frame_filename)
-        
+            success = cv2.imwrite(frame_filename, frame)
+            if success:
+                saved_frames.append(frame_filename)
+            else:
+                print(f"[Warning] Failed to write frame at count {count}")
+
         count += 1
-    
+
     cap.release()
+
+    print(f"[Info] Extracted {len(saved_frames)} frames to '{output_dir}' using interval {interval}.")
     return saved_frames
 
-# To Test independently. Uncomment the following lines:
-if __name__ == "__main__":
-    frames = extract_frames("data/sample_video.mp4")
-    print(f"Extracted {len(frames)} frames.")
+# To Test independently
+# if __name__ == "__main__":
+#     try:
+#         frames = extract_frames("data/sample_video.mp4", interval=None)  # Test with invalid interval
+#         print(f"[Success] Extracted {len(frames)} frames.")
+#     except Exception as e:
+#         print(f"[Exception] {e}")
