@@ -46,6 +46,6 @@ def analyze_image(image_path: str, context: str) -> str:
         return f"Error during API call: {e}"
 
 # To test this module independently, you can uncomment the section below.
-if __name__ == "__main__":
-    test_result = analyze_image("data/frames/frame_370.jpg", "Site type: open pit; Mineral: Gold")
-    print("Analysis:", test_result)
+# if __name__ == "__main__":
+#     test_result = analyze_image("data/frames/frame_370.jpg", "Site type: open pit; Mineral: Gold")
+#     print("Analysis:", test_result)

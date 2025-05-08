@@ -81,23 +81,23 @@ def run_analysis_callback():
     status_label.config(text="Analysis complete. Check results below.")
 
 
-def final_conclusion_callback():
-    """Generate a final conclusion using the collated analysis from all frames."""
-    if not analysis_results:
-        messagebox.showerror("Error", "No analysis results available. Please run the analysis first.")
-        return
+# def final_conclusion_callback():
+#     """Generate a final conclusion using the collated analysis from all frames."""
+#     if not analysis_results:
+#         messagebox.showerror("Error", "No analysis results available. Please run the analysis first.")
+#         return
 
-    # Combine all individual analyses into one large text blob.
-    combined_text = "\n".join(analysis_results.values())
+#     # Combine all individual analyses into one large text blob.
+#     combined_text = "\n".join(analysis_results.values())
     
-    # Create a prompt for the GPT API to generate a final conclusion.
-    prompt = (
-        "Based on the following frame analyses of a mining site, "
-        "please provide a final comprehensive conclusion summarizing the overall environmental conditions and "
-        "potential issues detected:\n\n"
-        f"{combined_text}\n\n"
-        "Final Conclusion:"
-    )
+#     # Create a prompt for the GPT API to generate a final conclusion.
+#     prompt = (
+#         "Based on the following frame analyses of a mining site, "
+#         "please provide a final comprehensive conclusion summarizing the overall environmental conditions and "
+#         "potential issues detected:\n\n"
+#         f"{combined_text}\n\n"
+#         "Final Conclusion:"
+#     )
     
     try:
         # Call the GPT API using the chat completion endpoint.
@@ -145,8 +145,8 @@ interval_entry.insert(0, str(config.FRAME_INTERVAL))  # Pre-populate with defaul
 interval_entry.grid(row=1, column=1, pady=5, padx=5, sticky="w")
 
 # Button for final conclusion.
-conclusion_button = tk.Button(root, text="Show Final Conclusion", width=20, command=final_conclusion_callback)
-conclusion_button.pack(pady=5)
+# conclusion_button = tk.Button(root, text="Show Final Conclusion", width=20, command=final_conclusion_callback)
+# conclusion_button.pack(pady=5)
 
 # Status label to display current processing status.
 status_label = tk.Label(root, text="Awaiting action...")
