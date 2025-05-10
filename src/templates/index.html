@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><title>MineWatch AI - PH</title></head>
+<body>
+  <h1>MineWatch AI - PH</h1>
+  {% with msgs = get_flashed_messages() %}
+    {% if msgs %}<ul>{% for m in msgs %}<li>{{ m }}</li>{% endfor %}</ul>{% endif %}
+  {% endwith %}
+  <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+    <label>Upload Video:</label>
+    <input type="file" name="video" accept="video/*">
+    <button type="submit">Upload</button>
+  </form>
+  <form action="{{ url_for('extract') }}" method="post">
+    <label>Frame Interval:</label>
+    <input type="text" name="interval" value="{{ default_interval }}">
+    <button type="submit">Extract Frames</button>
+  </form>
+  <form action="{{ url_for('analyze') }}" method="post">
+    <label>Context:</label>
+    <input type="text" name="context" size="80" value="Site type: open pit; Mineral: Gold; tropical climate…">
+    <button type="submit">Run Analysis</button>
+  </form>
+  <p><a href="{{ url_for('results') }}">View Frame Results</a></p>
+  <p><a href="{{ url_for('final') }}">Show Final Conclusion</a></p>
+</body>
+</html>
