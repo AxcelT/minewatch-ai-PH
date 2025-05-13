@@ -9,7 +9,7 @@ dist/
 *.egg-info/
 
 # Virtual environment directories
-venv/
+minewatch-venv/
 .env
 *.venv/
 

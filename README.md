@@ -34,15 +34,7 @@ pip install -r requirements.txt
 ---
 
 ## 🚀 Run the System
-
-```bash
-python src/main.py
-```
-
-The script will:
-1. Extract frames from your drone video
-2. Analyze each frame with your GPT API
-3. Save the results to a `.txt` file
+Nothing here yet to update hehehe
 
 ---
 
