@@ -1,7 +1,6 @@
 # app.py
 import os
 from flask import Flask, render_template, request, redirect, url_for, flash, Response, stream_with_context
-from video_processing import extract_frames
 from gpt_integration import analyze_image
 import config as config
 import openai
