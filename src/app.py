@@ -1,10 +1,12 @@
 # app.py
 import os
-from flask import Flask, render_template, request, redirect, url_for, flash
-from src.video_processing import extract_frames
-from src.gpt_integration import analyze_image
-import src.config as config
+from flask import Flask, render_template, request, redirect, url_for, flash, Response, stream_with_context
+from video_processing import extract_frames
+from gpt_integration import analyze_image
+import config as config
 import openai
+import cv2
+import shutil
 
 # Load .env
 from dotenv import load_dotenv
@@ -34,23 +36,58 @@ def upload():
     flash('Video uploaded successfully')
     return redirect(url_for('index'))
 
-@app.route('/extract', methods=['POST'])
+@app.route('/extract')
 def extract():
-    interval = request.form.get('interval', str(config.FRAME_INTERVAL))
+    """
+    Server-Sent Events endpoint streaming one event per extracted frame.
+    The client should connect via:
+        new EventSource(`/extract?interval=${n}`)
+    """
+    # Parse "interval" from query-string; fallback to default
     try:
-        interval = int(interval)
-        if interval <= 0: raise ValueError
+        interval = int(request.args.get('interval', config.FRAME_INTERVAL))
+        if interval <= 0:
+            raise ValueError
     except ValueError:
-        flash(f"Invalid interval—using default {config.FRAME_INTERVAL}")
         interval = config.FRAME_INTERVAL
+        flash(f"Invalid interval—using default {config.FRAME_INTERVAL}")
 
-    global extracted_frames
-    try:
-        extracted_frames = extract_frames(config.VIDEO_PATH, 'data/frames', interval)
-        flash(f"Extracted {len(extracted_frames)} frames")
-    except Exception as e:
-        flash(f"Extraction error: {e}")
-    return redirect(url_for('index'))
+    def generate():
+        global extracted_frames
+        extracted_frames = []
+
+        cap = cv2.VideoCapture(config.VIDEO_PATH)
+        if not cap.isOpened():
+            yield "data: ERROR: cannot open video\n\n"
+            return
+
+        count = 0
+        idx = 0
+        frame_dir = 'data/frames'
+
+        # Clear old frames
+        if os.path.exists(frame_dir):
+            shutil.rmtree(frame_dir)
+        os.makedirs(frame_dir, exist_ok=True)
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            if count % interval == 0:
+                outpath = os.path.join(frame_dir, f"frame_{idx}.jpg")
+                cv2.imwrite(outpath, frame)
+                extracted_frames.append(outpath)
+                yield f"data: Extracted frame {idx + 1}\n\n"
+                idx += 1
+
+            count += 1
+
+        cap.release()
+        yield f"data: Extraction complete: {idx} frames\n\n"
+
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
