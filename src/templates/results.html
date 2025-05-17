@@ -1,13 +1,28 @@
 <!DOCTYPE html>
 <html>
-<head><title>Results</title></head>
+<head>
+  <title>Results</title>
+</head>
 <body>
   <h1>Frame Analysis Results</h1>
+
   {% if analysis_results %}
-    <ul>
-    {% for frame, res in analysis_results.items() %}
-      <li><strong>{{ frame }}</strong>:<br>{{ res }}</li>
-    {% endfor %}
+    <ul class="results-list">
+      {% for frame, res in analysis_results.items() %}
+        <li class="result-item">
+          <!-- image container -->
+          <img
+            src="{{ url_for('media.serve_frame', filename=frame|basename) }}"
+            alt="Frame {{ loop.index }}"
+          />
+          </div>
+          <!-- description container -->
+          <div class="result-description">
+            <strong>{{ frame }}</strong><br/>
+            {{ res | safe }}
+          </div>
+        </li>
+      {% endfor %}
     </ul>
   {% else %}
     <p>No results yet.</p>

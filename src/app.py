@@ -4,9 +4,11 @@ import logging
 from flask import (
     Flask, render_template, request,
     redirect, url_for, flash,
-    Response, stream_with_context, jsonify
+    Response, stream_with_context, jsonify,
+    session, send_from_directory
 )
 from gpt_integration import analyze_image
+from media import media_bp
 import config as config
 import openai
 import cv2
@@ -21,6 +23,12 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['UPLOAD_FOLDER'] = os.path.dirname(config.VIDEO_PATH)
 
+#Blueprint for media routes
+app.register_blueprint(media_bp)
+
+def basename(path):
+    return os.path.basename(path)
+app.jinja_env.filters['basename'] = basename
 # Configure logging to match Flask/Werkzeug style
 logging.basicConfig(
     format='%(asctime)s %(levelname)s in %(module)s: %(message)s',
@@ -30,6 +38,12 @@ logging.basicConfig(
 # Globals to hold state
 extracted_frames = []
 analysis_results = {}
+
+@app.route('/frames/<path:filename>')
+def frame_file(filename):
+    # app.root_path is the folder where app.py lives
+    frame_root = os.path.join(app.root_path, 'data', 'frames')
+    return send_from_directory(frame_root, filename)
 
 @app.route('/')
 def index():
