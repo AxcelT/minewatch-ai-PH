@@ -22,8 +22,8 @@ git clone https://github.com/your-username/minewatch-ai-PH.git
 cd minewatch-ai-PH
 
 # Create virtual environment
-python3.11 -m venv venv
-source venv/bin/activate     # Windows: venv\Scripts\activate
+python3.11 -m venv minewatch-venv
+source minewatch-venv/bin/activate     # Windows: minewatch-venv\Scripts\activate
 
 # Install required packages
 pip install -r requirements.txt
