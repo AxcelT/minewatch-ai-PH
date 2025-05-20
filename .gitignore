@@ -33,3 +33,6 @@ tmp/
 
 # Test output and caches
 .pytest_cache/
+
+#VS Code Workspace
+minewatch-VS-workspace.code-workspace
