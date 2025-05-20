@@ -109,6 +109,7 @@ document.addEventListener('DOMContentLoaded', () => {
       extractProg.textContent = '';
 
       setPageDisabled(true);
+      extractBtn.disabled = false;
       extractBtn.textContent = 'Cancel Extraction';
       extracting             = true;
 
