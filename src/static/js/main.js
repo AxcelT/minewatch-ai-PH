@@ -101,8 +101,12 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
 
       if (extracting) {
-        if (window._sseSource) window._sseSource.close();
-        return;
+          if (window._sseSource) window._sseSource.close();
+            fetch('/extract/abort', { method: 'POST' });
+            setPageDisabled(false);
+            extractBtn.textContent = 'Extract Frames';
+            extracting = false;
+            return;
       }
 
       const interval = intervalInput.value.trim();
