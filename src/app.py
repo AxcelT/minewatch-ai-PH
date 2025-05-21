@@ -38,6 +38,7 @@ logging.basicConfig(
 # Globals to hold state
 extracted_frames = []
 analysis_results = {}
+abort_extraction = False
 
 @app.route('/frames/<path:filename>')
 def frame_file(filename):
@@ -103,25 +104,41 @@ def extract():
         os.makedirs(frame_dir, exist_ok=True)
         app.logger.info('Frame directory cleared and ready (%s)', frame_dir)
 
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                app.logger.info('No more frames to read after %d loops', count)
-                break
+        try:
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    app.logger.info('No more frames to read after %d loops', count)
+                    break
 
-            if count % interval == 0:
-                outpath = os.path.join(frame_dir, f"frame_{idx}.jpg")
-                cv2.imwrite(outpath, frame)
-                extracted_frames.append(outpath)
-                app.logger.info('Extracted frame %d → %s', idx + 1, outpath)
-                yield f"data: Extracted frame {idx + 1}\n\n"
-                idx += 1
+                if count % interval == 0:
+                    outpath = os.path.join(frame_dir, f"frame_{idx}.jpg")
+                    cv2.imwrite(outpath, frame)
+                    extracted_frames.append(outpath)
+                    app.logger.info('Extracted frame %d → %s', idx + 1, outpath)
+                    try:
+                        # this yield will raise if the client has disconnected
+                        yield f"data: Extracted frame {idx + 1}\n\n"
+                    except GeneratorExit:
+                        app.logger.info('Extraction aborted by client at frame %d', idx + 1)
+                        return
+                    except OSError as e:
+                        app.logger.info('Client disconnected (OS error) at frame %d: %s', idx + 1, e)
+                        return
+                    idx += 1
 
-            count += 1
+                count += 1
 
-        cap.release()
-        app.logger.info('Extraction complete: %d frames', idx)
-        yield f"data: Extraction complete: {idx} frames\n\n"
+            # only emit completion if we got here normally
+            app.logger.info('Extraction complete: %d frames', idx)
+            try:
+                yield f"data: Extraction complete: {idx} frames\n\n"
+            except GeneratorExit:
+                app.logger.info('Client disconnected before final message at frame %d', idx)
+            except OSError as e:
+                app.logger.info('Client disconnected (OS error) before final message at frame %d: %s', idx, e)
+        finally:
+            cap.release()
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
