@@ -9,6 +9,7 @@ from flask import (
 )
 from gpt_integration import analyze_image
 from media import media_bp
+from services.llm_service import summarize_with_chain  # or summarize_with_openai
 import config as config
 import openai
 import cv2
@@ -178,23 +179,13 @@ def final():
         flash('No analysis to summarize')
         return redirect(url_for('results'))
 
-    combined = "\n".join(analysis_results.values())
-    prompt = "Summarize the following analyses into a final conclusion:\n\n" + combined
     app.logger.info('Sending summary prompt to OpenAI (token limit: 300)')
 
     try:
-        resp = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "You are a mining site expert."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=300
-        )
-        conclusion = resp.choices[0].message.content
+        conclusion = summarize_with_chain(analysis_results)
         app.logger.info('Received final conclusion from OpenAI')
     except Exception as e:
-        app.logger.error('OpenAI error in /final: %s', e)
+        app.logger.error('LLM error in /final: %s', e)
         conclusion = f"Error: {e}"
 
     return render_template('final.html', final_conclusion=conclusion)
