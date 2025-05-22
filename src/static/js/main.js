@@ -1,4 +1,4 @@
-// Add frame choosing feature
+// Add frame choosing feature (Frame choosing, and addition)
 
 document.addEventListener('DOMContentLoaded', () => {
   //
