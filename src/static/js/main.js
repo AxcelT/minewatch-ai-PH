@@ -1,3 +1,5 @@
+// Add frame choosing feature
+
 document.addEventListener('DOMContentLoaded', () => {
   //
   // 1. Video Upload
