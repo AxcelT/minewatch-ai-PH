@@ -2,28 +2,74 @@
 <html>
 <head>
   <title>Results</title>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    .frames-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Adjusted minmax for better spacing */
+      gap: 15px; /* Increased gap */
+      margin-bottom: 20px;
+    }
+    .frame-item {
+      border: 1px solid #ddd; /* Lighter border */
+      border-radius: 5px; /* Rounded corners */
+      padding: 15px; /* Increased padding */
+      text-align: center;
+      display: flex; /* For aligning checkbox and content */
+      flex-direction: column; /* Stack checkbox, image, text vertically */
+      align-items: center; /* Center items horizontally */
+    }
+    .frame-item img {
+      max-width: 100%;
+      height: auto;
+      margin-bottom: 10px; /* Increased margin */
+      border-radius: 3px; /* Slight rounding for images */
+    }
+    .frame-item .result-description {
+      font-size: 0.9em;
+      text-align: left; /* Align text to left for readability */
+      width: 100%; /* Ensure description takes full width */
+    }
+    .frame-checkbox {
+      margin-bottom: 10px; /* Increased margin */
+      align-self: flex-start; /* Align checkbox to the start of the item */
+    }
+    #remove-frames-btn {
+      padding: 10px 15px;
+      background-color: #dc3545; /* Red color for delete */
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1em;
+    }
+    #remove-frames-btn:hover {
+      background-color: #c82333; /* Darker red on hover */
+    }
+  </style>
 </head>
 <body>
   <h1>Frame Analysis Results</h1>
 
   {% if analysis_results %}
-    <ul class="results-list">
+    <div class="frames-grid">
       {% for frame, res in analysis_results.items() %}
-        <li class="result-item">
-          <!-- image container -->
+        <div class="frame-item">
+          <input type="checkbox" class="frame-checkbox" name="selected_frames" value="{{ frame|basename }}">
           <img
             src="{{ url_for('media.serve_frame', filename=frame|basename) }}"
-            alt="Frame {{ loop.index }}"
+            alt="Frame {{ frame|basename }}"
           />
-          </div>
-          <!-- description container -->
           <div class="result-description">
-            <strong>{{ frame }}</strong><br/>
+            <strong>{{ frame|basename }}</strong><br/> {# Display basename for consistency #}
             {{ res | safe }}
           </div>
-        </li>
+        </div>
       {% endfor %}
-    </ul>
+    </div>
+    <button id="remove-frames-btn">Remove Selected Frames</button>
   {% else %}
     <p>No results yet.</p>
   {% endif %}
