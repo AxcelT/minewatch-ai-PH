@@ -2,53 +2,7 @@
 <html>
 <head>
   <title>Results</title>
-  <style>
-    body {
-      font-family: sans-serif;
-    }
-    .frames-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* Adjusted minmax for better spacing */
-      gap: 15px; /* Increased gap */
-      margin-bottom: 20px;
-    }
-    .frame-item {
-      border: 1px solid #ddd; /* Lighter border */
-      border-radius: 5px; /* Rounded corners */
-      padding: 15px; /* Increased padding */
-      text-align: center;
-      display: flex; /* For aligning checkbox and content */
-      flex-direction: column; /* Stack checkbox, image, text vertically */
-      align-items: center; /* Center items horizontally */
-    }
-    .frame-item img {
-      max-width: 100%;
-      height: auto;
-      margin-bottom: 10px; /* Increased margin */
-      border-radius: 3px; /* Slight rounding for images */
-    }
-    .frame-item .result-description {
-      font-size: 0.9em;
-      text-align: left; /* Align text to left for readability */
-      width: 100%; /* Ensure description takes full width */
-    }
-    .frame-checkbox {
-      margin-bottom: 10px; /* Increased margin */
-      align-self: flex-start; /* Align checkbox to the start of the item */
-    }
-    #remove-frames-btn {
-      padding: 10px 15px;
-      background-color: #dc3545; /* Red color for delete */
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 1em;
-    }
-    #remove-frames-btn:hover {
-      background-color: #c82333; /* Darker red on hover */
-    }
-  </style>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
   <h1>Frame Analysis Results</h1>
