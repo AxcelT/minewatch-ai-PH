@@ -13,8 +13,10 @@
         <div class="frame-item">
           <input type="checkbox" class="frame-checkbox" name="selected_frames" value="{{ frame|basename }}">
           <img
-            src="{{ url_for('media.serve_frame', filename=frame|basename) }}"
+            src="{{ url_for('frame_file', filename=frame|basename) }}"
             alt="Frame {{ frame|basename }}"
+            width="200"
+            loading="lazy"
           />
           <div class="result-description">
             <strong>{{ frame|basename }}</strong><br/> {# Display basename for consistency #}

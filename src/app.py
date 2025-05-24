@@ -43,8 +43,7 @@ abort_extraction = False
 
 @app.route('/frames/<path:filename>')
 def frame_file(filename):
-    # app.root_path is the folder where app.py lives
-    frame_root = os.path.join(app.root_path, 'data', 'frames')
+    frame_root = os.path.abspath(os.path.join(os.getcwd(), 'data', 'frames'))
     return send_from_directory(frame_root, filename)
 
 @app.route('/')
