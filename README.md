@@ -14,6 +14,28 @@
 
 ---
 
+## 🎯 Current Milestone Objectives
+
+#### 🔧 1. Run Analysis Button UX
+- [ ] Disable other buttons while analysis is running.
+- [ ] Show a loading indicator or spinner during the process.
+- [ ] Prevent re-triggering of analysis mid-run.
+
+#### 🧠 2. LangChain Pipeline Refactor
+- [ ] Add **nested chains**: one per frame, analyzing multiple risk factors.
+- [ ] Implement a **meta-chain** to summarize across frames for a complete report.
+- [ ] Store all AI outputs and user prompts for RAG-style chatbot use.
+- [ ] Prototype chatbot that responds based on stored site analysis data.
+
+#### 🖼️ 3. Add Frame Support
+- [ ] Enable manual frame **insertion** in case of skipped or poor-quality frames.
+- [ ] Integrate added frames into the existing pipeline seamlessly.
+
+#### 🎨 4. UI/UX Enhancement
+- [ ] Refactor layout and component design for clarity and ease of use.
+- [ ] Group features visually for intuitive flow (e.g., upload > extract > analyze).
+- [ ] Add basic frontend polish or outsource UI work to a frontend dev.
+
 ## ⚙️ Setup Instructions
 
 ```bash
