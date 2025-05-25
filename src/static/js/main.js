@@ -133,7 +133,77 @@ document.addEventListener('DOMContentLoaded', () => {
             window._sseSource.close();
             setPageDisabled(false);
             extractBtn.textContent = 'Extract Frames';
-            extracting             = false;
+            extracting = false;
+
+            // Show the pre-analysis preview UI
+            document.getElementById('preview-section').style.display = 'block';
+
+            // Fetch and render the thumbnails
+            fetch('/preview_frames')
+              .then(response => response.json())
+              .then(json => {
+                const grid     = document.getElementById('preview-grid');
+                const removeB  = document.getElementById('pre-remove-btn');
+                const analyzeB = document.querySelector('form[action$="/analyze"] button[type="submit"]');
+
+                grid.innerHTML = '';
+
+                json.frames.forEach(name => {
+                  const item = document.createElement('div');
+                  item.classList.add('frame-item');
+
+                  const cb = document.createElement('input');
+                  cb.type        = 'checkbox';
+                  cb.value       = name;
+                  cb.classList.add('frame-checkbox');
+
+                  const img = document.createElement('img');
+                  img.src     = `/frames/${name}`;
+                  img.width   = 160;
+                  img.loading = 'lazy';
+
+                  item.append(cb, img);
+                  grid.appendChild(item);
+                });
+
+                // Enable the Remove and Analyze buttons
+                removeB.disabled  = false;
+                analyzeB.disabled = false;
+
+                // Wire up the Remove button
+                removeB.addEventListener('click', () => {
+                  const toRemove = Array.from(
+                    grid.querySelectorAll('.frame-checkbox:checked')
+                  ).map(cb => cb.value);
+
+                  if (!toRemove.length) {
+                    return alert('Select frames first.');
+                  }
+                  removeB.disabled = true;
+
+                  fetch('/remove_frames', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ frames: toRemove })
+                  })
+                  .then(r => r.json())
+                  .then(data => {
+                    if (data.success) {
+                      toRemove.forEach(name => {
+                        const el = grid.querySelector(`.frame-checkbox[value="${name}"]`)
+                                        .closest('.frame-item');
+                        el.remove();
+                      });
+                    } else {
+                      alert('Remove error: ' + data.message);
+                    }
+                  })
+                  .catch(() => alert('Network error during removal'))
+                  .finally(() => {
+                    removeB.disabled = false;
+                  });
+                });
+              });
           }
         };
 

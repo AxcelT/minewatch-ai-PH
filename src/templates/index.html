@@ -35,6 +35,13 @@
   </div>
   <pre id="extract-progress" style="background:#f0f0f0; padding:1em;"></pre>
 
+  <!-- ✂️ Pre-analysis preview/removal UI -->
+  <section id="preview-section" style="display:none; margin-top:2em;">
+    <h2>Preview & Remove Frames</h2>
+    <div id="preview-grid" class="frames-grid"></div>
+    <button id="pre-remove-btn" disabled>Remove Selected Frames</button>
+  </section>
+
   <!-- Run Analysis -->
   <form action="{{ url_for('analyze') }}" method="post">
     <label for="context">Context:</label>

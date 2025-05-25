@@ -142,6 +142,12 @@ def extract():
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
+@app.route('/preview_frames')
+def preview_frames():
+    """Return the list of extracted frame basenames for client-side preview."""
+    basenames = [os.path.basename(p) for p in extracted_frames]
+    return jsonify({ 'frames': basenames })
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     app.logger.info('POST /analyze → %d frames in queue', len(extracted_frames))
