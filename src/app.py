@@ -43,8 +43,7 @@ abort_extraction = False
 
 @app.route('/frames/<path:filename>')
 def frame_file(filename):
-    # app.root_path is the folder where app.py lives
-    frame_root = os.path.join(app.root_path, 'data', 'frames')
+    frame_root = os.path.abspath(os.path.join(os.getcwd(), 'data', 'frames'))
     return send_from_directory(frame_root, filename)
 
 @app.route('/')
@@ -143,6 +142,12 @@ def extract():
 
     return Response(stream_with_context(generate()), mimetype='text/event-stream')
 
+@app.route('/preview_frames')
+def preview_frames():
+    """Return the list of extracted frame basenames for client-side preview."""
+    basenames = [os.path.basename(p) for p in extracted_frames]
+    return jsonify({ 'frames': basenames })
+
 @app.route('/analyze', methods=['POST'])
 def analyze():
     app.logger.info('POST /analyze → %d frames in queue', len(extracted_frames))
@@ -189,6 +194,82 @@ def final():
         conclusion = f"Error: {e}"
 
     return render_template('final.html', final_conclusion=conclusion)
+
+@app.route('/remove_frames', methods=['POST'])
+def remove_frames_route(): # Renamed to avoid conflict with os.remove_frames if it existed
+    global extracted_frames, analysis_results
+    app.logger.info("POST /remove_frames received")
+
+    data = request.get_json()
+    if not data or 'frames' not in data or not isinstance(data['frames'], list):
+        app.logger.warning("Invalid request format for /remove_frames: %s", data)
+        return jsonify({'success': False, 'message': 'Invalid request format. Expected {"frames": [...]}'}), 400
+
+    frames_to_remove_basenames = data['frames']
+    if not frames_to_remove_basenames:
+        app.logger.info("No frames specified for removal.")
+        return jsonify({'success': True, 'message': 'No frames specified for removal.'})
+
+    app.logger.info(f"Request to remove frames: {frames_to_remove_basenames}")
+
+    # Keep track of frames that were successfully found and processed for removal from data structures
+    processed_for_removal_keys = []
+    # Keep track of frames that couldn't be deleted from filesystem
+    filesystem_delete_failures = []
+
+    for basename_frame in frames_to_remove_basenames:
+        # Construct the full path key as stored in extracted_frames and analysis_results
+        # This assumes app.root_path is the project root where 'data' directory resides.
+        # Given frame_dir = 'data/frames' in extract(), this is consistent.
+        frame_path_key = os.path.join('data', 'frames', basename_frame)
+        
+        app.logger.info(f"Processing removal for frame key: {frame_path_key}")
+
+        # Attempt to remove from filesystem
+        try:
+            # The actual physical path for os.remove should be relative to app.root_path if not absolute
+            # os.path.join(app.root_path, frame_path_key) might be more robust if CWD changes
+            # However, given 'data/frames' is used directly in extract, this should be fine.
+            physical_frame_path = os.path.join(app.root_path, frame_path_key)
+            if not os.path.exists(physical_frame_path): # Check before attempting delete
+                 app.logger.warning(f"Filesystem: Frame not found, skipping delete: {physical_frame_path}")
+            else:
+                os.remove(physical_frame_path)
+                app.logger.info(f"Filesystem: Successfully removed frame file: {physical_frame_path}")
+            
+            # If file deletion (or file not found) is successful, mark for removal from data structures
+            processed_for_removal_keys.append(frame_path_key)
+
+        except FileNotFoundError: # Should be caught by os.path.exists now, but good to keep
+            app.logger.warning(f"Filesystem: Frame not found during os.remove, skipping: {physical_frame_path}")
+            processed_for_removal_keys.append(frame_path_key) # Still attempt to remove from lists
+        except OSError as e:
+            app.logger.error(f"Filesystem: Error deleting file {physical_frame_path}: {e}")
+            filesystem_delete_failures.append(basename_frame)
+            # Decide if this is critical. For now, we'll log and continue,
+            # but the frame might remain in the data structures if not added to processed_for_removal_keys.
+            # For safety, we won't add it to processed_for_removal_keys if the delete failed for reasons other than not found.
+
+    # Update global lists/dicts
+    if processed_for_removal_keys:
+        original_extracted_count = len(extracted_frames)
+        extracted_frames = [f for f in extracted_frames if f not in processed_for_removal_keys]
+        app.logger.info(f"Data: `extracted_frames` updated. Removed {original_extracted_count - len(extracted_frames)} items.")
+
+        original_analysis_count = len(analysis_results)
+        for key_to_remove in processed_for_removal_keys:
+            if key_to_remove in analysis_results:
+                analysis_results.pop(key_to_remove)
+        app.logger.info(f"Data: `analysis_results` updated. Removed {original_analysis_count - len(analysis_results)} items.")
+    
+    if filesystem_delete_failures:
+        return jsonify({
+            'success': False, 
+            'message': f"Some frames could not be deleted from the filesystem: {filesystem_delete_failures}. Data structures updated for others."
+        }), 500
+
+    return jsonify({'success': True, 'message': 'Selected frames processed for removal.'})
+
 
 if __name__ == '__main__':
     app.logger.info('Launching MineWatch-AI-PH app on port 5000')

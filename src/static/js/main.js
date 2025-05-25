@@ -133,7 +133,77 @@ document.addEventListener('DOMContentLoaded', () => {
             window._sseSource.close();
             setPageDisabled(false);
             extractBtn.textContent = 'Extract Frames';
-            extracting             = false;
+            extracting = false;
+
+            // Show the pre-analysis preview UI
+            document.getElementById('preview-section').style.display = 'block';
+
+            // Fetch and render the thumbnails
+            fetch('/preview_frames')
+              .then(response => response.json())
+              .then(json => {
+                const grid     = document.getElementById('preview-grid');
+                const removeB  = document.getElementById('pre-remove-btn');
+                const analyzeB = document.querySelector('form[action$="/analyze"] button[type="submit"]');
+
+                grid.innerHTML = '';
+
+                json.frames.forEach(name => {
+                  const item = document.createElement('div');
+                  item.classList.add('frame-item');
+
+                  const cb = document.createElement('input');
+                  cb.type        = 'checkbox';
+                  cb.value       = name;
+                  cb.classList.add('frame-checkbox');
+
+                  const img = document.createElement('img');
+                  img.src     = `/frames/${name}`;
+                  img.width   = 160;
+                  img.loading = 'lazy';
+
+                  item.append(cb, img);
+                  grid.appendChild(item);
+                });
+
+                // Enable the Remove and Analyze buttons
+                removeB.disabled  = false;
+                analyzeB.disabled = false;
+
+                // Wire up the Remove button
+                removeB.addEventListener('click', () => {
+                  const toRemove = Array.from(
+                    grid.querySelectorAll('.frame-checkbox:checked')
+                  ).map(cb => cb.value);
+
+                  if (!toRemove.length) {
+                    return alert('Select frames first.');
+                  }
+                  removeB.disabled = true;
+
+                  fetch('/remove_frames', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ frames: toRemove })
+                  })
+                  .then(r => r.json())
+                  .then(data => {
+                    if (data.success) {
+                      toRemove.forEach(name => {
+                        const el = grid.querySelector(`.frame-checkbox[value="${name}"]`)
+                                        .closest('.frame-item');
+                        el.remove();
+                      });
+                    } else {
+                      alert('Remove error: ' + data.message);
+                    }
+                  })
+                  .catch(() => alert('Network error during removal'))
+                  .finally(() => {
+                    removeB.disabled = false;
+                  });
+                });
+              });
           }
         };
 
@@ -152,5 +222,68 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   } else {
     console.warn('Extraction elements not found in DOM');
+  }
+
+  //
+  // 3. Frame Removal
+  //
+  const removeFramesBtn = document.getElementById('remove-frames-btn');
+
+  if (removeFramesBtn) {
+    removeFramesBtn.addEventListener('click', () => {
+      const selectedCheckboxes = document.querySelectorAll('.frame-checkbox:checked');
+      const framesToRemove = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+      if (framesToRemove.length === 0) {
+        alert('Please select frames to remove.');
+        return;
+      }
+
+      // Disable button to prevent multiple clicks
+      removeFramesBtn.disabled = true;
+      removeFramesBtn.textContent = 'Removing...';
+
+      fetch('/remove_frames', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ frames: framesToRemove }),
+      })
+      .then(response => {
+        if (!response.ok) {
+          // Try to get error message from response body if possible
+          return response.json().then(errData => {
+            throw new Error(errData.message || `Server error: ${response.statusText}`);
+          }).catch(() => {
+            // If parsing error body fails, throw generic error
+            throw new Error(`Server error: ${response.statusText} (Status: ${response.status})`);
+          });
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success) {
+          // alert('Frames removed successfully. Reloading...'); // Optional: give user feedback before reload
+          location.reload();
+        } else {
+          alert('Error removing frames: ' + (data.message || 'Unknown error from server.'));
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to remove frames: ' + error.message);
+      })
+      .finally(() => {
+        // Re-enable button if it's still on the page (i.e., no reload happened)
+        if (document.getElementById('remove-frames-btn')) {
+            removeFramesBtn.disabled = false;
+            removeFramesBtn.textContent = 'Remove Selected Frames';
+        }
+      });
+    });
+  } else {
+    // This is not an error, just means the button isn't on the current page.
+    // console.log('Remove frames button not found on this page.');
   }
 });

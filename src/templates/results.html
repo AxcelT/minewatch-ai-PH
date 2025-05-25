@@ -2,28 +2,30 @@
 <html>
 <head>
   <title>Results</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
   <h1>Frame Analysis Results</h1>
 
   {% if analysis_results %}
-    <ul class="results-list">
+    <div class="frames-grid">
       {% for frame, res in analysis_results.items() %}
-        <li class="result-item">
-          <!-- image container -->
+        <div class="frame-item">
+          <input type="checkbox" class="frame-checkbox" name="selected_frames" value="{{ frame|basename }}">
           <img
-            src="{{ url_for('media.serve_frame', filename=frame|basename) }}"
-            alt="Frame {{ loop.index }}"
+            src="{{ url_for('frame_file', filename=frame|basename) }}"
+            alt="Frame {{ frame|basename }}"
+            width="200"
+            loading="lazy"
           />
-          </div>
-          <!-- description container -->
           <div class="result-description">
-            <strong>{{ frame }}</strong><br/>
+            <strong>{{ frame|basename }}</strong><br/> {# Display basename for consistency #}
             {{ res | safe }}
           </div>
-        </li>
+        </div>
       {% endfor %}
-    </ul>
+    </div>
+    <button id="remove-frames-btn">Remove Selected Frames</button>
   {% else %}
     <p>No results yet.</p>
   {% endif %}
