@@ -1,9 +1,8 @@
-// Add frame choosing feature (Frame choosing, and addition)
+// main.js
+// Handles video upload, frame extraction via SSE, and frame removal in the client UI
 
 document.addEventListener('DOMContentLoaded', () => {
-  //
-  // 1. Video Upload
-  //
+  // --- Video Upload Section ---
   const fileInput    = document.getElementById('video');
   const cancelUpload = document.getElementById('cancel-upload');
   const progressBar  = document.getElementById('upload-progress');
@@ -12,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const analyzeBtn   = document.querySelector('form[action$="/analyze"] button[type="submit"]');
   const viewLinks    = Array.from(document.querySelectorAll('a'));
 
+  // Enable or disable page controls during upload/extraction
   function setPageDisabled(disabled) {
     [fileInput, extractBtn, analyzeBtn].forEach(el => el && (el.disabled = disabled));
     viewLinks.forEach(a => a.style.pointerEvents = disabled ? 'none' : '');
@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let xhrUpload;
 
   if (fileInput && progressBar && statusText) {
+    // Handle new file selection and upload
     fileInput.addEventListener('change', () => {
       const file = fileInput.files[0];
       if (!file) return;
@@ -28,12 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
       fileInput.style.display    = 'none';
       cancelUpload.style.display = 'inline-block';
 
+      // Prepare form data and start XHR upload
       const formData = new FormData();
       formData.append('video', file);
-
       xhrUpload = new XMLHttpRequest();
       xhrUpload.open('POST', '/upload', true);
 
+      // Update progress bar
       xhrUpload.upload.onprogress = (e) => {
         if (e.lengthComputable) {
           progressBar.style.display = 'block';
@@ -41,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       };
 
+      // Handle upload completion
       xhrUpload.onload = () => {
         setPageDisabled(false);
         fileInput.value            = '';
@@ -65,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => { statusText.textContent = ''; }, 3000);
       };
 
+      // Handle network errors
       xhrUpload.onerror = () => {
         setPageDisabled(false);
         fileInput.style.display    = '';
@@ -77,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
       xhrUpload.send(formData);
     });
 
+    // Allow user to cancel an ongoing upload
     cancelUpload.addEventListener('click', () => {
       if (xhrUpload) xhrUpload.abort();
       statusText.textContent     = 'Upload canceled.';
@@ -91,9 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     console.warn('Upload elements not found in DOM');
   }
 
-  //
-  // 2. Frame Extraction (SSE)
-  //
+  // --- Frame Extraction Section (SSE) ---
   const intervalInput = document.getElementById('interval');
   const extractProg   = document.getElementById('extract-progress');
   let extracting      = false;
@@ -102,13 +105,14 @@ document.addEventListener('DOMContentLoaded', () => {
     extractBtn.addEventListener('click', (e) => {
       e.preventDefault();
 
+      // Cancel extraction if already running
       if (extracting) {
-          if (window._sseSource) window._sseSource.close();
-            fetch('/extract/abort', { method: 'POST' });
-            setPageDisabled(false);
-            extractBtn.textContent = 'Extract Frames';
-            extracting = false;
-            return;
+        if (window._sseSource) window._sseSource.close();
+        fetch('/extract/abort', { method: 'POST' });
+        setPageDisabled(false);
+        extractBtn.textContent = 'Extract Frames';
+        extracting = false;
+        return;
       }
 
       const interval = intervalInput.value.trim();
@@ -119,26 +123,29 @@ document.addEventListener('DOMContentLoaded', () => {
       extractBtn.textContent = 'Cancel Extraction';
       extracting             = true;
 
+      // Clean up any previous SSE
       if (window._sseSource) {
         window._sseSource.close();
       }
 
+      // Start Server-Sent Events connection
       try {
         const src = new EventSource(`/extract?interval=${encodeURIComponent(interval)}`);
         window._sseSource = src;
 
         src.onmessage = (evt) => {
           extractProg.textContent += evt.data + "\n";
+
+          // On completion, close SSE and show preview UI
           if (evt.data.startsWith("Extraction complete")) {
             window._sseSource.close();
             setPageDisabled(false);
             extractBtn.textContent = 'Extract Frames';
             extracting = false;
 
-            // Show the pre-analysis preview UI
             document.getElementById('preview-section').style.display = 'block';
 
-            // Fetch and render the thumbnails
+            // Fetch and render frame thumbnails
             fetch('/preview_frames')
               .then(response => response.json())
               .then(json => {
@@ -166,19 +173,17 @@ document.addEventListener('DOMContentLoaded', () => {
                   grid.appendChild(item);
                 });
 
-                // Enable the Remove and Analyze buttons
+                // Enable remove and analyze buttons
                 removeB.disabled  = false;
                 analyzeB.disabled = false;
 
-                // Wire up the Remove button
+                // Wire up the Remove button in preview
                 removeB.addEventListener('click', () => {
                   const toRemove = Array.from(
                     grid.querySelectorAll('.frame-checkbox:checked')
                   ).map(cb => cb.value);
 
-                  if (!toRemove.length) {
-                    return alert('Select frames first.');
-                  }
+                  if (!toRemove.length) return alert('Select frames first.');
                   removeB.disabled = true;
 
                   fetch('/remove_frames', {
@@ -190,8 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                   .then(data => {
                     if (data.success) {
                       toRemove.forEach(name => {
-                        const el = grid.querySelector(`.frame-checkbox[value="${name}"]`)
-                                        .closest('.frame-item');
+                        const el = grid.querySelector(`.frame-checkbox[value="${name}"]`).closest('.frame-item');
                         el.remove();
                       });
                     } else {
@@ -199,14 +203,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                   })
                   .catch(() => alert('Network error during removal'))
-                  .finally(() => {
-                    removeB.disabled = false;
-                  });
+                  .finally(() => { removeB.disabled = false; });
                 });
               });
           }
         };
 
+        // Handle SSE errors
         src.onerror = (err) => {
           console.error('SSE error:', err);
           extractProg.textContent += "Error in extraction stream\n";
@@ -224,12 +227,11 @@ document.addEventListener('DOMContentLoaded', () => {
     console.warn('Extraction elements not found in DOM');
   }
 
-  //
-  // 3. Frame Removal
-  //
+  // --- Frame Removal Section ---
   const removeFramesBtn = document.getElementById('remove-frames-btn');
 
   if (removeFramesBtn) {
+    // Handle removal of selected frames after analysis
     removeFramesBtn.addEventListener('click', () => {
       const selectedCheckboxes = document.querySelectorAll('.frame-checkbox:checked');
       const framesToRemove = Array.from(selectedCheckboxes).map(cb => cb.value);
@@ -239,32 +241,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Disable button to prevent multiple clicks
       removeFramesBtn.disabled = true;
       removeFramesBtn.textContent = 'Removing...';
 
       fetch('/remove_frames', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ frames: framesToRemove }),
       })
       .then(response => {
         if (!response.ok) {
-          // Try to get error message from response body if possible
           return response.json().then(errData => {
             throw new Error(errData.message || `Server error: ${response.statusText}`);
-          }).catch(() => {
-            // If parsing error body fails, throw generic error
-            throw new Error(`Server error: ${response.statusText} (Status: ${response.status})`);
           });
         }
         return response.json();
       })
       .then(data => {
         if (data.success) {
-          // alert('Frames removed successfully. Reloading...'); // Optional: give user feedback before reload
           location.reload();
         } else {
           alert('Error removing frames: ' + (data.message || 'Unknown error from server.'));
@@ -275,15 +269,12 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Failed to remove frames: ' + error.message);
       })
       .finally(() => {
-        // Re-enable button if it's still on the page (i.e., no reload happened)
+        // Re-enable button if page not reloaded
         if (document.getElementById('remove-frames-btn')) {
-            removeFramesBtn.disabled = false;
-            removeFramesBtn.textContent = 'Remove Selected Frames';
+          removeFramesBtn.disabled = false;
+          removeFramesBtn.textContent = 'Remove Selected Frames';
         }
       });
     });
-  } else {
-    // This is not an error, just means the button isn't on the current page.
-    // console.log('Remove frames button not found on this page.');
-  }
+  } // end removeFramesBtn check
 });
