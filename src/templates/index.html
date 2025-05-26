@@ -3,9 +3,12 @@
 <head>
   <meta charset="utf-8">
   <title>MineWatch AI - PH</title>
+  <!-- Main page for video upload, frame extraction, and analysis controls -->
 </head>
 <body>
   <h1>MineWatch AI - PH</h1>
+
+  <!-- Flash messages for status updates (e.g., upload success, errors) -->
   {% with msgs = get_flashed_messages() %}
     {% if msgs %}
       <ul>
@@ -16,44 +19,51 @@
     {% endif %}
   {% endwith %}
 
-  <!-- Upload Video -->
+  <!-- Video Upload Section -->
   <div id="upload-container">
     <label for="video">Upload Video:</label>
     <input type="file" id="video" accept="video/*">
     <button type="button" id="cancel-upload" style="display:none">Cancel Upload</button>
-    
-    <progress id="upload-progress" max="100" value="0"
-              style="display:none; width:100%;"></progress>
+    <!-- Progress bar and status text during upload -->
+    <progress id="upload-progress" max="100" value="0" style="display:none; width:100%;"></progress>
     <span id="upload-status"></span>
   </div>
 
-  <!-- Extract Frames (SSE) -->
+  <!-- Frame Extraction Section (Server-Sent Events) -->
   <div>
     <label for="interval">Frame Interval:</label>
     <input type="text" id="interval" value="{{ default_interval }}">
     <button id="extract-btn">Extract Frames</button>
   </div>
+  <!-- Area to display real-time extraction logs -->
   <pre id="extract-progress" style="background:#f0f0f0; padding:1em;"></pre>
 
-  <!-- ✂️ Pre-analysis preview/removal UI -->
+  <!-- Pre-Analysis Preview & Removal Section -->
   <section id="preview-section" style="display:none; margin-top:2em;">
     <h2>Preview & Remove Frames</h2>
+    <!-- Grid container for frame thumbnails and checkboxes -->
     <div id="preview-grid" class="frames-grid"></div>
+    <!-- Button to remove user-selected frames before analysis -->
     <button id="pre-remove-btn" disabled>Remove Selected Frames</button>
   </section>
 
-  <!-- Run Analysis -->
+  <!-- Analysis Context & Submission Form -->
   <form action="{{ url_for('analyze') }}" method="post">
     <label for="context">Context:</label>
-    <input type="text" id="context" name="context" size="80"
+    <!-- Input for user to specify analysis context -->
+    <input type="text"
+           id="context"
+           name="context"
+           size="80"
            value="Site type: open pit; Mineral: Gold; tropical climate, rainfall patterns…">
     <button type="submit">Run Analysis</button>
   </form>
 
+  <!-- Navigation links to results and final summary pages -->
   <p><a href="{{ url_for('results') }}">View Frame Results</a></p>
   <p><a href="{{ url_for('final') }}">Show Final Conclusion</a></p>
 
-  <!-- Upload logic -->
+  <!-- Include client-side logic for upload, extraction, and removal -->
   <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

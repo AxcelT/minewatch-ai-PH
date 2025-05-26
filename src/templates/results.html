@@ -2,33 +2,49 @@
 <html>
 <head>
   <title>Results</title>
+  <!-- Link to main stylesheet -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
   <h1>Frame Analysis Results</h1>
 
+  <!-- Check if there are analysis results to display -->
   {% if analysis_results %}
+    <!-- Container for displaying each frame and its analysis -->
     <div class="frames-grid">
       {% for frame, res in analysis_results.items() %}
         <div class="frame-item">
-          <input type="checkbox" class="frame-checkbox" name="selected_frames" value="{{ frame|basename }}">
+          <!-- Checkbox to select frame for removal -->
+          <input
+            type="checkbox"
+            class="frame-checkbox"
+            name="selected_frames"
+            value="{{ frame|basename }}"
+          >
+          <!-- Display the frame image -->
           <img
             src="{{ url_for('frame_file', filename=frame|basename) }}"
             alt="Frame {{ frame|basename }}"
             width="200"
             loading="lazy"
           />
+          <!-- Analysis result description for the frame -->
           <div class="result-description">
-            <strong>{{ frame|basename }}</strong><br/> {# Display basename for consistency #}
+            <strong>{{ frame|basename }}</strong><br/>
             {{ res | safe }}
           </div>
         </div>
       {% endfor %}
     </div>
+
+    <!-- Button to trigger removal of selected frames -->
     <button id="remove-frames-btn">Remove Selected Frames</button>
   {% else %}
+    <!-- Message displayed when no analysis results are available -->
     <p>No results yet.</p>
   {% endif %}
+
+  <!-- Link to return to the main page -->
   <p><a href="{{ url_for('index') }}">← Back</a></p>
 </body>
 </html>
