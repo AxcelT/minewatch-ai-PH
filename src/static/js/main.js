@@ -3,17 +3,18 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // --- Video Upload Section ---
-  const fileInput    = document.getElementById('video');
-  const cancelUpload = document.getElementById('cancel-upload');
-  const progressBar  = document.getElementById('upload-progress');
-  const statusText   = document.getElementById('upload-status');
-  const extractBtn   = document.getElementById('extract-btn');
-  const analyzeBtn   = document.querySelector('form[action$="/analyze"] button[type="submit"]');
-  const viewLinks    = Array.from(document.querySelectorAll('a'));
+  const fileInput      = document.getElementById('video');
+  const cancelUpload   = document.getElementById('cancel-upload');
+  const progressBar    = document.getElementById('upload-progress');
+  const statusText     = document.getElementById('upload-status');
+  const extractBtn     = document.getElementById('extract-btn');
+  const analyzeBtn     = document.getElementById('analyze-btn');
+  const cancelAnalysis = document.getElementById('cancel-analysis');
+  const viewLinks      = Array.from(document.querySelectorAll('a'));
 
   // Enable or disable page controls during upload/extraction
   function setPageDisabled(disabled) {
-    [fileInput, extractBtn, analyzeBtn].forEach(el => el && (el.disabled = disabled));
+    [fileInput, extractBtn, analyzeBtn, cancelAnalysis].forEach(el => el && (el.disabled = disabled));
     viewLinks.forEach(a => a.style.pointerEvents = disabled ? 'none' : '');
   }
 
@@ -151,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
               .then(json => {
                 const grid     = document.getElementById('preview-grid');
                 const removeB  = document.getElementById('pre-remove-btn');
-                const analyzeB = document.querySelector('form[action$="/analyze"] button[type="submit"]');
+                const analyzeB = analyzeBtn
 
                 grid.innerHTML = '';
 
@@ -225,6 +226,74 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   } else {
     console.warn('Extraction elements not found in DOM');
+  }
+
+  // --- Analysis Section (SSE) ---
+  const analysisProg = document.getElementById('analysis-progress');
+  let analyzing     = false;
+
+  if (analyzeBtn && cancelAnalysis && analysisProg) {
+    analyzeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+
+      if (analyzing) {
+        // cancel
+        if (window._analysisSource) window._analysisSource.close();
+        fetch('/analyze/abort', { method: 'POST' });
+        setPageDisabled(false);
+        analyzeBtn.textContent      = 'Run Analysis';
+        cancelAnalysis.style.display = 'none';
+        analyzing                   = false;
+        return;
+      }
+
+      // start
+      const context = document.getElementById('context').value.trim();
+      analysisProg.textContent = '';
+
+      setPageDisabled(true);
+      analyzeBtn.disabled          = false; // so user can click “Stop”
+      analyzeBtn.textContent       = 'Stop Analysis';
+      cancelAnalysis.style.display = 'inline-block';
+      analyzing                     = true;
+
+      if (window._analysisSource) window._analysisSource.close();
+      const src = new EventSource(`/analyze_stream?context=${encodeURIComponent(context)}`);
+      window._analysisSource = src;
+
+      src.onmessage = (evt) => {
+        analysisProg.textContent += evt.data + "\n";
+        if (evt.data.startsWith("Analysis complete")) {
+          window._analysisSource.close();
+          setPageDisabled(false);
+          analyzeBtn.textContent       = 'Run Analysis';
+          cancelAnalysis.style.display = 'none';
+          analyzing                    = false;
+        }
+      };
+
+      src.onerror = (err) => {
+        console.error('SSE error:', err);
+        analysisProg.textContent += "Error in analysis stream\n";
+        window._analysisSource.close();
+        setPageDisabled(false);
+        analyzeBtn.textContent       = 'Run Analysis';
+        cancelAnalysis.style.display = 'none';
+        analyzing                    = false;
+      };
+    });
+
+    cancelAnalysis.addEventListener('click', () => {
+      // identical cancel logic
+      if (window._analysisSource) window._analysisSource.close();
+      fetch('/extract/abort', { method: 'POST' });
+      setPageDisabled(false);
+      analyzeBtn.textContent      = 'Run Analysis';
+      cancelAnalysis.style.display = 'none';
+      analyzing                   = false;
+    });
+  } else {
+    console.warn('Analysis elements not found in DOM');
   }
 
   // --- Frame Removal Section ---

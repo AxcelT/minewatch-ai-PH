@@ -48,17 +48,21 @@
   </section>
 
   <!-- Analysis Context & Submission Form -->
-  <form action="{{ url_for('analyze') }}" method="post">
+  <form id="analysis-form" action="{{ url_for('analyze') }}" method="post">
     <label for="context">Context:</label>
-    <!-- Input for user to specify analysis context -->
-    <input type="text"
-           id="context"
-           name="context"
-           size="80"
-           value="Site type: open pit; Mineral: Gold; tropical climate, rainfall patterns…">
-    <button type="submit">Run Analysis</button>
+    <input
+      type="text"
+      id="context"
+      name="context"
+      size="80"
+      value="Site type: open pit; Mineral: Gold; tropical climate, rainfall patterns…"
+    >
+    <button type="button" id="analyze-btn">Run Analysis</button>
+    <button type="button" id="cancel-analysis" style="display:none">Stop Analysis</button>
   </form>
 
+  <!-- Analysis progress -->
+  <pre id="analysis-progress" style="background:#eef; padding:1em; margin-top:1em;"></pre>
   <!-- Navigation links to results and final summary pages -->
   <p><a href="{{ url_for('results') }}">View Frame Results</a></p>
   <p><a href="{{ url_for('final') }}">Show Final Conclusion</a></p>
