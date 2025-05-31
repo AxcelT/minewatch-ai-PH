@@ -9,12 +9,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusText     = document.getElementById('upload-status');
   const extractBtn     = document.getElementById('extract-btn');
   const analyzeBtn     = document.getElementById('analyze-btn');
-  const cancelAnalysis = document.getElementById('cancel-analysis');
   const viewLinks      = Array.from(document.querySelectorAll('a'));
 
   // Enable or disable page controls during upload/extraction
   function setPageDisabled(disabled) {
-    [fileInput, extractBtn, analyzeBtn, cancelAnalysis].forEach(el => el && (el.disabled = disabled));
+    [fileInput, extractBtn, analyzeBtn].forEach(el => el && (el.disabled = disabled));
     viewLinks.forEach(a => a.style.pointerEvents = disabled ? 'none' : '');
   }
 
@@ -229,10 +228,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- Analysis Section (SSE) ---
-  const analysisProg = document.getElementById('analysis-progress');
-  let analyzing     = false;
+  const analysisProg  = document.getElementById('analysis-progress');
+  let analyzing       = false;
 
-  if (analyzeBtn && cancelAnalysis && analysisProg) {
+  if (analyzeBtn && analysisProg) {
     analyzeBtn.addEventListener('click', (e) => {
       e.preventDefault();
 
@@ -241,9 +240,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window._analysisSource) window._analysisSource.close();
         fetch('/analyze/abort', { method: 'POST' });
         setPageDisabled(false);
-        analyzeBtn.textContent      = 'Run Analysis';
-        cancelAnalysis.style.display = 'none';
-        analyzing                   = false;
+        analyzeBtn.textContent  = 'Run Analysis';
+        analyzing               = false;
         return;
       }
 
@@ -252,10 +250,9 @@ document.addEventListener('DOMContentLoaded', () => {
       analysisProg.textContent = '';
 
       setPageDisabled(true);
-      analyzeBtn.disabled          = false; // so user can click “Stop”
-      analyzeBtn.textContent       = 'Stop Analysis';
-      cancelAnalysis.style.display = 'inline-block';
-      analyzing                     = true;
+      analyzeBtn.disabled     = false;
+      analyzeBtn.textContent  = 'Stop Analysis';
+      analyzing               = true;
 
       if (window._analysisSource) window._analysisSource.close();
       const src = new EventSource(`/analyze_stream?context=${encodeURIComponent(context)}`);
@@ -266,9 +263,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (evt.data.startsWith("Analysis complete")) {
           window._analysisSource.close();
           setPageDisabled(false);
-          analyzeBtn.textContent       = 'Run Analysis';
-          cancelAnalysis.style.display = 'none';
-          analyzing                    = false;
+          analyzeBtn.textContent  = 'Run Analysis';
+          analyzing               = false;
         }
       };
 
@@ -277,24 +273,14 @@ document.addEventListener('DOMContentLoaded', () => {
         analysisProg.textContent += "Error in analysis stream\n";
         window._analysisSource.close();
         setPageDisabled(false);
-        analyzeBtn.textContent       = 'Run Analysis';
-        cancelAnalysis.style.display = 'none';
-        analyzing                    = false;
+        analyzeBtn.textContent  = 'Run Analysis';
+        analyzing               = false;
       };
-    });
-
-    cancelAnalysis.addEventListener('click', () => {
-      // identical cancel logic
-      if (window._analysisSource) window._analysisSource.close();
-      fetch('/extract/abort', { method: 'POST' });
-      setPageDisabled(false);
-      analyzeBtn.textContent      = 'Run Analysis';
-      cancelAnalysis.style.display = 'none';
-      analyzing                   = false;
     });
   } else {
     console.warn('Analysis elements not found in DOM');
   }
+
 
   // --- Frame Removal Section ---
   const removeFramesBtn = document.getElementById('remove-frames-btn');
