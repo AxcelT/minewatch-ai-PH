@@ -13,6 +13,7 @@ FRAMES_DIR   = os.path.join(DATA_DIR, "frames")
 
 # API Key
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+MODEL_NAME     = os.getenv("MODEL_NAME", "gpt-4o")
 
 # Additional Configurations
 FRAME_INTERVAL = int(os.getenv("FRAME_INTERVAL", 30))

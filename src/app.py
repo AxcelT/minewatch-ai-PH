@@ -7,7 +7,7 @@ from flask import (
     Response, stream_with_context, jsonify,
     session, send_from_directory
 )
-from src.llm_integration import analyze_image
+from llm_integration import analyze_frames, analyze_frame
 from media import media_bp
 from services.llm_service import summarize_with_chain
 import config
@@ -140,7 +140,7 @@ def preview_frames():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    """Route: Analyze extracted frames using the LLM-based image pipeline."""
+    """Route: Analyze extracted frames using the GPT-based image analysis service."""
     app.logger.info('POST /analyze → %d frames in queue', len(extracted_frames))
     if not extracted_frames:
         app.logger.warning('Analyze failed: no frames extracted')
@@ -153,7 +153,7 @@ def analyze():
     app.logger.info('Analysis context: %s', context)
 
     global analysis_results
-    analysis_results = {f: analyze_image(f, context) for f in extracted_frames}
+    analysis_results = {f: analyze_frames(f, context) for f in extracted_frames}
     app.logger.info('Analysis complete for %d frames', len(analysis_results))
     flash('Analysis complete')
     return redirect(url_for('results'))
@@ -163,9 +163,9 @@ def analyze_stream():
     context = request.args.get('context')
     def gen():
         for f in extracted_frames:
-            res = analyze_image(f, context)
-            analysis_results[f] = res
-            yield f"data: {f} → {res}\n\n"
+            res_dict = analyze_frame(f, context)
+            analysis_results[f] = res_dict
+            yield f"data: {f} → {res_dict}\n\n"
         yield "data: Analysis complete\n\n"
     return Response(stream_with_context(gen()),
                     mimetype='text/event-stream')
