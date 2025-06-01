@@ -159,6 +159,18 @@ def analyze():
     flash('Analysis complete')
     return redirect(url_for('results'))
 
+@app.route('/analyze_stream')
+def analyze_stream():
+    context = request.args.get('context')
+    def gen():
+        for f in extracted_frames:
+            res = analyze_image(f, context)
+            analysis_results[f] = res
+            yield f"data: {f} → {res}\n\n"
+        yield "data: Analysis complete\n\n"
+    return Response(stream_with_context(gen()),
+                    mimetype='text/event-stream')
+
 @app.route('/results')
 def results():
     """Route: Render analysis results in the results view."""
