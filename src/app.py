@@ -11,7 +11,6 @@ from gpt_integration import analyze_image
 from media import media_bp
 from services.llm_service import summarize_with_chain
 import config
-import openai
 import cv2
 import shutil
 from dotenv import load_dotenv
