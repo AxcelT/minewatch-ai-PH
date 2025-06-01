@@ -7,7 +7,7 @@ from flask import (
     Response, stream_with_context, jsonify,
     session, send_from_directory
 )
-from gpt_integration import analyze_image
+from src.llm_integration import analyze_image
 from media import media_bp
 from services.llm_service import summarize_with_chain
 import config
@@ -140,7 +140,7 @@ def preview_frames():
 
 @app.route('/analyze', methods=['POST'])
 def analyze():
-    """Route: Analyze extracted frames using the GPT-based image analysis service."""
+    """Route: Analyze extracted frames using the LLM-based image pipeline."""
     app.logger.info('POST /analyze → %d frames in queue', len(extracted_frames))
     if not extracted_frames:
         app.logger.warning('Analyze failed: no frames extracted')
