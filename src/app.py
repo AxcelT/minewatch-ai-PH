@@ -165,6 +165,7 @@ def analyze_stream():
     def gen():
         for f in extracted_frames:
             res = analyze_image(f, context)
+            analysis_results[f] = res
             yield f"data: {f} → {res}\n\n"
         yield "data: Analysis complete\n\n"
     return Response(stream_with_context(gen()),

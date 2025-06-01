@@ -266,6 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
           setPageDisabled(false);
           analyzeBtn.textContent  = 'Run Analysis';
           analyzing               = false;
+          window.location.href    = '/results';
         }
       };
 
