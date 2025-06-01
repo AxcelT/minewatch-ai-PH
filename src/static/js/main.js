@@ -9,11 +9,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const statusText     = document.getElementById('upload-status');
   const extractBtn     = document.getElementById('extract-btn');
   const analyzeBtn     = document.getElementById('analyze-btn');
+  const preRemoveBtn = document.getElementById('pre-remove-btn');
   const viewLinks      = Array.from(document.querySelectorAll('a'));
 
   // Enable or disable page controls during upload/extraction
   function setPageDisabled(disabled) {
-    [fileInput, extractBtn, analyzeBtn].forEach(el => el && (el.disabled = disabled));
+    [fileInput, extractBtn, analyzeBtn, preRemoveBtn].forEach(el => el && (el.disabled = disabled));
     viewLinks.forEach(a => a.style.pointerEvents = disabled ? 'none' : '');
   }
 
