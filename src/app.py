@@ -7,9 +7,8 @@ from flask import (
     Response, stream_with_context, jsonify,
     session, send_from_directory
 )
-from llm_integration import analyze_frames, analyze_frame
+from llm_integration import analyze_frames, analyze_frame, summarize_with_chain
 from media import media_bp
-from services.llm_service import summarize_with_chain
 import config
 import cv2
 import shutil

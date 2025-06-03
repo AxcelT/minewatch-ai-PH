@@ -4,19 +4,46 @@ import os
 from typing import List, Dict
 from config import OPENAI_API_KEY, MODEL_NAME
 
-from langchain_community.chat_models import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
 
-# Instantiate a single ChatOpenAI client (reused across calls)
+#Instantiate a single ChatOpenAI client (reused across calls)
 chat_client = ChatOpenAI(
-    model_name=MODEL_NAME,  # e.g. "gpt-4o"
-    openai_api_key=OPENAI_API_KEY
+    model_name=MODEL_NAME,     # e.g. "gpt-4o"
+    openai_api_key=OPENAI_API_KEY,
+    temperature=0
 )
 
+#Build a PromptTemplate for summarization
+_summary_template = """You are a mining site expert.
+Summarize the following analyses into a final conclusion:
+
+{combined_analyses}
+"""
+_summary_prompt = PromptTemplate(
+    input_variables=["combined_analyses"],
+    template=_summary_template
+)
+
+#Compose a RunnableSequence instead of using LLMChain
+_summary_chain = _summary_prompt | chat_client
+
+
+def summarize_with_chain(analysis_results: Dict[str, str]) -> str:
+    """
+    Combine all individual frame analyses (values of analysis_results)
+    and send to ChatOpenAI for a final summary.
+    """
+    combined = "\n".join(analysis_results.values())
+    # .invoke(...) runs the prompt → LLM sequence under the hood
+    return _summary_chain.invoke({"combined_analyses": combined})
+
+
 def _encode_image(image_path: str) -> str:
-    """Read and base64‐encode an image file."""
+    """Read and base64-encode an image file."""
     with open(image_path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
+
 
 def _is_relevant(image_path: str, context: str) -> bool:
     """
@@ -24,60 +51,55 @@ def _is_relevant(image_path: str, context: str) -> bool:
     Returns True if relevant, False otherwise.
     """
     img_b64 = _encode_image(image_path)
-    messages = [
-        SystemMessage(
-            content=(
-                "You are a mining‐site relevance checker. "
-                "Answer strictly 'yes' or 'no'."
-            )
-        ),
-        HumanMessage(
-            content=[
-                {"type": "text", "text": f"Context: {context}. Is this image of a mining site?"},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
-            ]
-        ),
-    ]
-    resp = chat_client.generate(messages=messages)
+    resp = chat_client.generate(
+        messages=[
+            {
+                "role": "system",
+                "content": "You are a mining-site relevance checker. Answer strictly 'yes' or 'no'."
+            },
+            {
+                "role": "user",
+                "content": f"Context: {context}. Is this image of a mining site?",
+                "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}
+            }
+        ]
+    )
     answer = resp.generations[0][0].message.content.strip().lower()
     return answer.startswith("yes")
+
 
 def analyze_frame(image_path: str, context: str) -> Dict[str, str]:
     """
     For a single frame:
       1. Check relevance. If 'no', return {'relevant': 'false'}.
-      2. Otherwise, loop through categories (water, safety, tailings, etc.)
-         and collect each prompt’s output. Return a dict of results.
+      2. Otherwise, loop through categories and collect each prompt’s output.
     """
     results: Dict[str, str] = {}
     if not _is_relevant(image_path, context):
         return {"relevant": "false"}
 
-    # list of specific checks per frame
     categories = {
         "water": "Describe any water discoloration or pooling.",
         "safety": "Identify visible safety hazards (e.g., loose rocks, equipment).",
         "tailings": "Assess tailings condition and possible overflow risks.",
-        # add more keys/prompts if needed
+        # add more categories as needed
     }
 
     img_b64 = _encode_image(image_path)
     for key, prompt_text in categories.items():
-        messages = [
-            SystemMessage(
-                content=(
-                    "You are a mining site analysis assistant. "
-                    "Provide concise observations for each category."
-                )
-            ),
-            HumanMessage(
-                content=[
-                    {"type": "text", "text": f"Context: {context}. {prompt_text}"},
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
-                ]
-            ),
-        ]
-        resp = chat_client.generate(messages=messages)
+        resp = chat_client.generate(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a mining site analysis assistant. Provide concise observations for each category."
+                },
+                {
+                    "role": "user",
+                    "content": f"Context: {context}. {prompt_text}",
+                    "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}
+                }
+            ]
+        )
         results[key] = resp.generations[0][0].message.content.strip()
 
     results["relevant"] = "true"
@@ -87,7 +109,6 @@ def analyze_frames(frame_paths: List[str], context: str) -> Dict[str, Dict[str, 
     """
     Loop through all extracted frame paths:
       - Call analyze_frame() on each path.
-      - Skip further prompts if not relevant.
       - Aggregate results in a dict: {frame_path: {...results...}}
     """
     all_results: Dict[str, Dict[str, str]] = {}
